@@ -1,0 +1,422 @@
+openapi: 3.0.3
+info:
+  title: Drone Delivery Management API
+  version: 0.1.0
+  description: API for the Penny Software technical assessment. 
+
+servers:
+  - url: http://localhost:8080
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TokenRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [admin, enduser, drone]
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        expires_in:
+          type: integer
+          example: 3600
+
+    Location:
+      type: object
+      required: [lat, lon]
+      properties:
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+        timestamp:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        customer_name:
+          type: string
+        origin:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        status:
+          type: string
+          enum: [created, reserved, picked_up, delivered, failed, withdrawn]
+        assigned_drone_id:
+          type: string
+          format: uuid
+        eta:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateOrderRequest:
+      type: object
+      required: [origin, destination]
+      properties:
+        origin:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Drone:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [available, reserved, delivering, broken]
+        location:
+          $ref: '#/components/schemas/Location'
+        current_order_id:
+          type: string
+          format: uuid
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        source_drone_id:
+          type: string
+          format: uuid
+        reserved_by_drone_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [open, reserved, completed, cancelled]
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  /auth/token:
+    post:
+      summary: Issue a self-signed JWT token
+      description: Returns a bearer token for a user name and type (admin|enduser|drone).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders:
+    post:
+      summary: Create an order (enduser or admin)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List orders (admin can list all; enduser only their orders)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: list of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+
+  /orders/{orderId}:
+    parameters:
+      - in: path
+        name: orderId
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: Get order details
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: not found
+
+    delete:
+      summary: Withdraw an order (allowed if not yet picked up)
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: withdrawn
+        '409':
+          description: cannot withdraw (already reserved/picked)
+
+    patch:
+      summary: Modify order origin/destination (admin)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin:
+                  $ref: '#/components/schemas/Location'
+                destination:
+                  $ref: '#/components/schemas/Location'
+      responses:
+        '200':
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /drones:
+    get:
+      summary: List drones (admin)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: list of drones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Drone'
+
+  /drones/{droneId}:
+    parameters:
+      - in: path
+        name: droneId
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: Get drone details
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: drone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Drone'
+
+  /drones/{droneId}/location:
+    post:
+      summary: Drone posts its current location (heartbeat)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Location'
+      responses:
+        '200':
+          description: heartbeat accepted
+
+  /drones/{droneId}/broken:
+    post:
+      summary: Mark a drone broken (drone or admin)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: drone marked broken and handoff job created if it had an assigned order
+
+  /drones/{droneId}/fixed:
+    post:
+      summary: Mark a drone fixed (admin)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: drone fixed
+
+  /jobs:
+    get:
+      summary: List open jobs
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: job list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Job'
+
+  /jobs/{jobId}/reserve:
+    post:
+      summary: Drone reserves a handoff job
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: reserved
+        '409':
+          description: already reserved
+
+  /orders/{orderId}/grab:
+    post:
+      summary: Drone grabs an order (from origin or from broken drone handoff)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from_broken_drone_id:
+                  type: string
+                from_location:
+                  $ref: '#/components/schemas/Location'
+      responses:
+        '200':
+          description: drone assigned to order
+        '409':
+          description: already assigned/reserved
+
+  /orders/{orderId}/status:
+    post:
+      summary: Update order status (delivered | failed)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [delivered, failed]
+                note:
+                  type: string
+      responses:
+        '200':
+          description: status updated
+
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
