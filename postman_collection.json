@@ -1,0 +1,66 @@
+{
+  "info": {
+    "_postman_id": "1a2b3c4d-0000-0000-0000-000000000000",
+    "name": "Drone Delivery API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"alice\",\n  \"type\": \"admin\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/v1/auth/token",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api","v1","auth","token"]
+        }
+      }
+    },
+    {
+      "name": "List Drones",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/drones",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api","v1","drones"]
+        }
+      }
+    },
+    {
+      "name": "Drone Heartbeat",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"lat\": 25.2854,\n  \"lon\": 51.5310\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/v1/drones/drone-1/location",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api","v1","drones","drone-1","location"]
+        }
+      }
+    }
+  ]
+}

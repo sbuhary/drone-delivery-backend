@@ -1,13 +1,13 @@
-package co.penny.drone_delivery_backend;
+package co.penny.dronedelivery;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DroneDeliveryBackendApplication {
+public class DroneDeliveryApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DroneDeliveryBackendApplication.class, args);
+		SpringApplication.run(DroneDeliveryApplication.class, args);
 	}
 
 }

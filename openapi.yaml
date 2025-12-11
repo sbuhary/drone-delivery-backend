@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
   title: Drone Delivery Management API
-  version: 0.1.0
+  version: 1.0.0
   description: API for the Penny Software technical assessment. 
 
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8080/api/v1
 
 components:
   securitySchemes:

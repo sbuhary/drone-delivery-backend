@@ -1,10 +1,10 @@
-package co.penny.drone_delivery_backend;
+package co.penny.dronedelivery;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DroneDeliveryBackendApplicationTests {
+class DroneDeliveryApplicationTests {
 
 	@Test
 	void contextLoads() {
